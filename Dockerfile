@@ -6,11 +6,11 @@ WORKDIR /app
 COPY go.mod go.sum ./
 RUN go mod download
 
-# Copy all source code in backend folder
+# Copy all source code
 COPY . .
 
 # Build the Go binary
-RUN go build -o pubsub ./cmd/main.go  # adjust path if main.go is directly inside backend
+RUN go build -o pubsub main.go
 
 # Run stage
 FROM alpine:3.18

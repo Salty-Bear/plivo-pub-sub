@@ -1,8 +1,8 @@
 package providers
 
 import (
-	"github.com/gofiber/fiber/v2"
 	"github.com/Aryaman/pub-sub/config"
+	"github.com/gofiber/fiber/v2"
 )
 
 type Provider struct {
