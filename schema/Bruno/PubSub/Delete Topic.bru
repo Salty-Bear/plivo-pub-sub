@@ -1,11 +1,21 @@
-{
-  "name": "Delete Topic",
-  "request": {
-    "method": "DELETE",
-    "url": "http://localhost:8080/api/pubsub/topic/{{topicName}}",
-    "headers": [
-      { "name": "Content-Type", "value": "application/json" }
-    ]
-  },
-  "description": "Deletes a PubSub topic by name."
+meta {
+  name: Delete Topic
+  type: http
+  seq: 1
+}
+
+delete {
+  url: {{baseUrl}}/pubsub/v1/topics/:name
+  body: json
+  auth: inherit
+}
+
+params:path {
+  name: orders
+}
+
+body:json {
+  {
+    "name":"test"
+  }
 }

@@ -1,14 +1,17 @@
-{
-  "name": "Create Topic",
-  "request": {
-    "method": "POST",
-    "url": "http://localhost:8080/api/pubsub/topic",
-    "headers": [
-      { "name": "Content-Type", "value": "application/json" }
-    ],
-    "body": {
-      "name": "test-topic"
-    }
-  },
-  "description": "Creates a new PubSub topic."
+meta {
+  name: Create Topic
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/pubsub/v1/topics
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "name":"test"
+  }
 }

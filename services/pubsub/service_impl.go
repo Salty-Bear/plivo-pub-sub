@@ -260,7 +260,6 @@ func (s *ServiceImpl) DeleteTopic(ctx context.Context, c *fiber.Ctx) error {
 	// Notify all subscribers about topic deletion and disconnect them
 	topic.Mu.Lock()
 	for _, sub := range topic.Subscribers {
-		// Send info message about topic deletion
 		sendInfoWS(sub.Conn, name, "topic_deleted")
 		close(sub.CloseChannel)
 	}
