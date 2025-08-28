@@ -17,7 +17,7 @@ import (
 
 // Test HTTP API endpoints
 func TestCreateTopic(t *testing.T) {
-	service := NewService()
+	service := NewService(100, 100)
 	app := fiber.New()
 
 	app.Post("/topics", func(c *fiber.Ctx) error {
@@ -76,7 +76,7 @@ func TestCreateTopic(t *testing.T) {
 }
 
 func TestDeleteTopic(t *testing.T) {
-	service := NewService()
+	service := NewService(100, 100)
 	app := fiber.New()
 
 	// Create a topic first
@@ -119,7 +119,7 @@ func TestDeleteTopic(t *testing.T) {
 }
 
 func TestListTopics(t *testing.T) {
-	service := NewService()
+	service := NewService(100, 100)
 	app := fiber.New()
 
 	// Add some test topics
@@ -154,7 +154,7 @@ func TestListTopics(t *testing.T) {
 }
 
 func TestHealthEndpoint(t *testing.T) {
-	service := NewService()
+	service := NewService(100, 100)
 	app := fiber.New()
 
 	app.Get("/health", func(c *fiber.Ctx) error {
@@ -178,7 +178,7 @@ func TestHealthEndpoint(t *testing.T) {
 
 // Test core functionality
 func TestTopicMessageStorage(t *testing.T) {
-	service := NewService()
+	service := NewService(100, 100)
 	service.MaxMessages = 3 // Small buffer for testing
 
 	topic := &sdk.Topic{
@@ -213,7 +213,7 @@ func TestTopicMessageStorage(t *testing.T) {
 }
 
 func TestSlowConsumerDetection(t *testing.T) {
-	service := NewService()
+	service := NewService(100, 100)
 	service.MaxQueue = 2 // Small queue for testing
 
 	topic := &sdk.Topic{
@@ -253,7 +253,7 @@ func TestSlowConsumerDetection(t *testing.T) {
 }
 
 func TestConcurrentAccess(t *testing.T) {
-	service := NewService()
+	service := NewService(100, 100)
 
 	// Create topic
 	topic := &sdk.Topic{
