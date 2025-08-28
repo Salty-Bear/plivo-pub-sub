@@ -2,6 +2,7 @@ package config
 
 import (
 	"os"
+	"strconv"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/log"
@@ -53,6 +54,8 @@ func (a *AppConfig) LoadServerConfig() {
 	// then load from env variables
 	a.Server.Host = "localhost"
 	a.Server.Port = "3000"
+	a.Server.MaxQueue = 100
+	a.Server.MaxMessages = 100
 
 	host := os.Getenv("SERVER_HOST")
 	if host != "" {
@@ -61,6 +64,16 @@ func (a *AppConfig) LoadServerConfig() {
 	port := os.Getenv("SERVER_PORT")
 	if port != "" {
 		a.Server.Port = port
+	}
+	if mq := os.Getenv("MAX_QUEUE"); mq != "" {
+		if v, err := strconv.Atoi(mq); err == nil {
+			a.Server.MaxQueue = v
+		}
+	}
+	if mm := os.Getenv("MAX_MESSAGES"); mm != "" {
+		if v, err := strconv.Atoi(mm); err == nil {
+			a.Server.MaxMessages = v
+		}
 	}
 }
 

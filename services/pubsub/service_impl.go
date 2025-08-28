@@ -20,13 +20,13 @@ type ServiceImpl struct {
 	MaxMessages int // per-topic ring buffer size
 }
 
-// NewService creates a new PubSub service instance
-func NewService() *ServiceImpl {
+// NewService creates a new PubSub service instance with config
+func NewService(maxQueue, maxMessages int) *ServiceImpl {
 	return &ServiceImpl{
 		Topics:      make(map[string]*sdk.Topic),
 		Uptime:      time.Now(),
-		MaxQueue:    100, // configurable queue size for backpressure handling
-		MaxMessages: 100, // configurable ring buffer size for replay
+		MaxQueue:    maxQueue,
+		MaxMessages: maxMessages,
 	}
 }
 

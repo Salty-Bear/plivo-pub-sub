@@ -10,9 +10,7 @@ type Provider struct {
 }
 
 func InjectDefaultProviders(cnf config.AppConfig) (*Provider, error) {
-
-	svcs := NewServices()
-
+	svcs := NewServicesWithConfig(cnf)
 	return &Provider{
 		S: svcs,
 	}, nil
