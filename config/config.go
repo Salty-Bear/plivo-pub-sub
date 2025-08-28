@@ -69,7 +69,7 @@ func (a *AppConfig) LoadDeploymentConfig() {
 	// load the default values
 	// then load from env variables
 	a.Deployment.Environment = "development"
-	a.Deployment.Name = "Cuttle.ai Demo"
+	a.Deployment.Name = "Pub Sub Service"
 
 	environment := os.Getenv("DEPLOYMENT_ENVIRONMENT")
 	if environment != "" {

@@ -3,10 +3,10 @@ package pubsub
 import (
 	"context"
 
+	"github.com/Aryaman/pub-sub/providers"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/log"
 	"github.com/gofiber/websocket/v2"
-	"github.com/melvinodsa/go-iam/providers"
 )
 
 // HandleWebSocket handles WebSocket connections for pub/sub operations

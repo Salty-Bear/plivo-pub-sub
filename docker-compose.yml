@@ -1,22 +1,11 @@
 services:
-  mongo:
-    image: mongo:latest
-    container_name: mongo
+  pubsub:
+    build:
+      context: .   # current folder (backend)
+      dockerfile: Dockerfile
+    container_name: pubsub_service
     ports:
-      - "27017:27017"
-    volumes:
-      - mongo-data:/data/db
-
-  redis:
-    image: redis:latest
-    container_name: redis
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis-data:/data
-
-volumes:
-  mongo-data:
-    driver: local
-  redis-data:
-    driver: local
+      - "3000:3000"
+    environment:
+      - PORT=3000
+    restart: unless-stopped

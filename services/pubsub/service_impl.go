@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/melvinodsa/go-iam/sdk"
+	"github.com/Aryaman/pub-sub/sdk"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/websocket/v2"
@@ -30,6 +30,12 @@ func NewService() *ServiceImpl {
 	}
 }
 
+// WebSocket message types for the writer goroutine
+type wsMessage struct {
+	Type string
+	Data interface{}
+}
+
 // HandleWebSocket processes WebSocket connections and messages
 func (s *ServiceImpl) HandleWebSocket(ctx context.Context, c *websocket.Conn) {
 	defer c.Close()
@@ -37,6 +43,31 @@ func (s *ServiceImpl) HandleWebSocket(ctx context.Context, c *websocket.Conn) {
 	var clientID string
 	var currentTopic *sdk.Topic
 	var currentSub *sdk.Subscriber
+
+	// Create a channel for serializing all WebSocket writes
+	writeChannel := make(chan wsMessage, 100)
+	writerDone := make(chan struct{})
+
+	// Start WebSocket writer goroutine - this is the ONLY goroutine that writes to the connection
+	go func() {
+		defer close(writerDone)
+		for msg := range writeChannel {
+			if err := c.WriteJSON(msg.Data); err != nil {
+				// Connection closed or error - stop processing
+				return
+			}
+		}
+	}()
+
+	// Helper function to safely send messages through the writer channel
+	sendMessage := func(msgType string, data interface{}) {
+		select {
+		case writeChannel <- wsMessage{Type: msgType, Data: data}:
+		default:
+			// Write channel full - connection is too slow, close it
+			close(writeChannel)
+		}
+	}
 
 	for {
 		// Parse incoming message using SDK struct
@@ -50,7 +81,15 @@ func (s *ServiceImpl) HandleWebSocket(ctx context.Context, c *websocket.Conn) {
 		switch req.Type {
 		case sdk.MessageTypeSubscribe:
 			if req.Topic == "" || req.ClientID == "" {
-				sendErrorWS(c, req.RequestID, sdk.ErrorCodeBadRequest, "topic and client_id required")
+				sendMessage("error", sdk.WebSocketResponse{
+					Type:      sdk.MessageTypeError,
+					RequestID: req.RequestID,
+					Error: &sdk.ErrorDetail{
+						Code:    sdk.ErrorCodeBadRequest,
+						Message: "topic and client_id required",
+					},
+					Timestamp: time.Now().UTC().Format(time.RFC3339),
+				})
 				continue
 			}
 
@@ -62,7 +101,15 @@ func (s *ServiceImpl) HandleWebSocket(ctx context.Context, c *websocket.Conn) {
 			s.mu.RUnlock()
 
 			if !ok {
-				sendErrorWS(c, req.RequestID, sdk.ErrorCodeTopicNotFound, "topic not found")
+				sendMessage("error", sdk.WebSocketResponse{
+					Type:      sdk.MessageTypeError,
+					RequestID: req.RequestID,
+					Error: &sdk.ErrorDetail{
+						Code:    sdk.ErrorCodeTopicNotFound,
+						Message: "topic not found",
+					},
+					Timestamp: time.Now().UTC().Format(time.RFC3339),
+				})
 				continue
 			}
 
@@ -95,7 +142,15 @@ func (s *ServiceImpl) HandleWebSocket(ctx context.Context, c *websocket.Conn) {
 						// Queue full during replay - disconnect slow consumer
 						close(sub.CloseChannel)
 						delete(topic.Subscribers, clientID)
-						sendErrorWS(c, req.RequestID, sdk.ErrorCodeSlowConsumer, "subscriber queue overflow during replay")
+						sendMessage("error", sdk.WebSocketResponse{
+							Type:      sdk.MessageTypeError,
+							RequestID: req.RequestID,
+							Error: &sdk.ErrorDetail{
+								Code:    sdk.ErrorCodeSlowConsumer,
+								Message: "subscriber queue overflow during replay",
+							},
+							Timestamp: time.Now().UTC().Format(time.RFC3339),
+						})
 						topic.Mu.Unlock()
 						goto nextMessage
 					}
@@ -106,13 +161,28 @@ func (s *ServiceImpl) HandleWebSocket(ctx context.Context, c *websocket.Conn) {
 			currentTopic = topic
 			currentSub = sub
 
-			// Start message delivery goroutine
-			go s.subscriberWriter(sub, req.Topic)
-			sendAckWS(c, req.RequestID, req.Topic)
+			// Start message delivery goroutine - it will use the same writeChannel
+			go s.subscriberWriter(sub, req.Topic, sendMessage)
+
+			sendMessage("ack", sdk.WebSocketResponse{
+				Type:      sdk.MessageTypeAck,
+				RequestID: req.RequestID,
+				Topic:     req.Topic,
+				Status:    sdk.StatusOK,
+				Timestamp: time.Now().UTC().Format(time.RFC3339),
+			})
 
 		case sdk.MessageTypeUnsubscribe:
 			if req.Topic == "" || req.ClientID == "" {
-				sendErrorWS(c, req.RequestID, sdk.ErrorCodeBadRequest, "topic and client_id required")
+				sendMessage("error", sdk.WebSocketResponse{
+					Type:      sdk.MessageTypeError,
+					RequestID: req.RequestID,
+					Error: &sdk.ErrorDetail{
+						Code:    sdk.ErrorCodeBadRequest,
+						Message: "topic and client_id required",
+					},
+					Timestamp: time.Now().UTC().Format(time.RFC3339),
+				})
 				continue
 			}
 
@@ -121,7 +191,15 @@ func (s *ServiceImpl) HandleWebSocket(ctx context.Context, c *websocket.Conn) {
 			s.mu.RUnlock()
 
 			if !ok {
-				sendErrorWS(c, req.RequestID, sdk.ErrorCodeTopicNotFound, "topic not found")
+				sendMessage("error", sdk.WebSocketResponse{
+					Type:      sdk.MessageTypeError,
+					RequestID: req.RequestID,
+					Error: &sdk.ErrorDetail{
+						Code:    sdk.ErrorCodeTopicNotFound,
+						Message: "topic not found",
+					},
+					Timestamp: time.Now().UTC().Format(time.RFC3339),
+				})
 				continue
 			}
 
@@ -133,11 +211,25 @@ func (s *ServiceImpl) HandleWebSocket(ctx context.Context, c *websocket.Conn) {
 			}
 			topic.Mu.Unlock()
 
-			sendAckWS(c, req.RequestID, req.Topic)
+			sendMessage("ack", sdk.WebSocketResponse{
+				Type:      sdk.MessageTypeAck,
+				RequestID: req.RequestID,
+				Topic:     req.Topic,
+				Status:    sdk.StatusOK,
+				Timestamp: time.Now().UTC().Format(time.RFC3339),
+			})
 
 		case sdk.MessageTypePublish:
 			if req.Topic == "" || req.Message == nil {
-				sendErrorWS(c, req.RequestID, sdk.ErrorCodeBadRequest, "topic and message required")
+				sendMessage("error", sdk.WebSocketResponse{
+					Type:      sdk.MessageTypeError,
+					RequestID: req.RequestID,
+					Error: &sdk.ErrorDetail{
+						Code:    sdk.ErrorCodeBadRequest,
+						Message: "topic and message required",
+					},
+					Timestamp: time.Now().UTC().Format(time.RFC3339),
+				})
 				continue
 			}
 
@@ -146,7 +238,15 @@ func (s *ServiceImpl) HandleWebSocket(ctx context.Context, c *websocket.Conn) {
 			s.mu.RUnlock()
 
 			if !ok {
-				sendErrorWS(c, req.RequestID, sdk.ErrorCodeTopicNotFound, "topic not found")
+				sendMessage("error", sdk.WebSocketResponse{
+					Type:      sdk.MessageTypeError,
+					RequestID: req.RequestID,
+					Error: &sdk.ErrorDetail{
+						Code:    sdk.ErrorCodeTopicNotFound,
+						Message: "topic not found",
+					},
+					Timestamp: time.Now().UTC().Format(time.RFC3339),
+				})
 				continue
 			}
 
@@ -179,19 +279,37 @@ func (s *ServiceImpl) HandleWebSocket(ctx context.Context, c *websocket.Conn) {
 				if sub, exists := topic.Subscribers[clientID]; exists {
 					close(sub.CloseChannel)
 					delete(topic.Subscribers, clientID)
-					// Notify slow consumer about disconnection
-					sendErrorWS(sub.Conn, req.RequestID, sdk.ErrorCodeSlowConsumer, "subscriber queue overflow")
+					// Note: We can't send error to slow consumer's connection here
+					// because we don't have access to their writeChannel
 				}
 			}
 
 			topic.Mu.Unlock()
-			sendAckWS(c, req.RequestID, req.Topic)
+			sendMessage("ack", sdk.WebSocketResponse{
+				Type:      sdk.MessageTypeAck,
+				RequestID: req.RequestID,
+				Topic:     req.Topic,
+				Status:    sdk.StatusOK,
+				Timestamp: time.Now().UTC().Format(time.RFC3339),
+			})
 
 		case sdk.MessageTypePing:
-			sendPongWS(c, req.RequestID)
+			sendMessage("pong", sdk.WebSocketResponse{
+				Type:      sdk.MessageTypePong,
+				RequestID: req.RequestID,
+				Timestamp: time.Now().UTC().Format(time.RFC3339),
+			})
 
 		default:
-			sendErrorWS(c, req.RequestID, sdk.ErrorCodeBadRequest, "unknown message type")
+			sendMessage("error", sdk.WebSocketResponse{
+				Type:      sdk.MessageTypeError,
+				RequestID: req.RequestID,
+				Error: &sdk.ErrorDetail{
+					Code:    sdk.ErrorCodeBadRequest,
+					Message: "unknown message type",
+				},
+				Timestamp: time.Now().UTC().Format(time.RFC3339),
+			})
 		}
 	nextMessage:
 	}
@@ -202,6 +320,10 @@ func (s *ServiceImpl) HandleWebSocket(ctx context.Context, c *websocket.Conn) {
 		delete(currentTopic.Subscribers, currentSub.ClientID)
 		currentTopic.Mu.Unlock()
 	}
+
+	// Close write channel and wait for writer to finish
+	close(writeChannel)
+	<-writerDone
 }
 
 // CreateTopic creates a new topic via REST API
@@ -257,10 +379,9 @@ func (s *ServiceImpl) DeleteTopic(ctx context.Context, c *fiber.Ctx) error {
 		})
 	}
 
-	// Notify all subscribers about topic deletion and disconnect them
+	// Close all subscriber channels - their writer goroutines will handle cleanup
 	topic.Mu.Lock()
 	for _, sub := range topic.Subscribers {
-		sendInfoWS(sub.Conn, name, "topic_deleted")
 		close(sub.CloseChannel)
 	}
 	topic.Subscribers = make(map[string]*sdk.Subscriber)
@@ -333,68 +454,19 @@ func (s *ServiceImpl) Stats(ctx context.Context, c *fiber.Ctx) error {
 	return c.JSON(sdk.StatsResponse{Topics: stats})
 }
 
-// WebSocket helper functions for protocol compliance
-
-func sendAckWS(c *websocket.Conn, requestID, topic string) {
-	resp := sdk.WebSocketResponse{
-		Type:      sdk.MessageTypeAck,
-		RequestID: requestID,
-		Topic:     topic,
-		Status:    sdk.StatusOK,
-		Timestamp: time.Now().UTC().Format(time.RFC3339),
-	}
-	c.WriteJSON(resp)
-}
-
-func sendErrorWS(c *websocket.Conn, requestID, code, message string) {
-	resp := sdk.WebSocketResponse{
-		Type:      sdk.MessageTypeError,
-		RequestID: requestID,
-		Error: &sdk.ErrorDetail{
-			Code:    code,
-			Message: message,
-		},
-		Timestamp: time.Now().UTC().Format(time.RFC3339),
-	}
-	c.WriteJSON(resp)
-}
-
-func sendPongWS(c *websocket.Conn, requestID string) {
-	resp := sdk.WebSocketResponse{
-		Type:      sdk.MessageTypePong,
-		RequestID: requestID,
-		Timestamp: time.Now().UTC().Format(time.RFC3339),
-	}
-	c.WriteJSON(resp)
-}
-
-func sendEventWS(c *websocket.Conn, topic string, msg sdk.Message) {
-	resp := sdk.WebSocketResponse{
-		Type:      sdk.MessageTypeEvent,
-		Topic:     topic,
-		Message:   &msg,
-		Timestamp: msg.TS.Format(time.RFC3339),
-	}
-	c.WriteJSON(resp)
-}
-
-func sendInfoWS(c *websocket.Conn, topic, message string) {
-	resp := sdk.WebSocketResponse{
-		Type:      sdk.MessageTypeInfo,
-		Topic:     topic,
-		Msg:       message,
-		Timestamp: time.Now().UTC().Format(time.RFC3339),
-	}
-	c.WriteJSON(resp)
-}
-
 // subscriberWriter delivers messages from subscriber queue to WebSocket
-func (s *ServiceImpl) subscriberWriter(sub *sdk.Subscriber, topic string) {
+// It uses the sendMessage function to ensure thread-safe writes
+func (s *ServiceImpl) subscriberWriter(sub *sdk.Subscriber, topic string, sendMessage func(string, interface{})) {
 	for {
 		select {
 		case msg := <-sub.Queue:
 			sub.LastActive = time.Now()
-			sendEventWS(sub.Conn, topic, msg)
+			sendMessage("event", sdk.WebSocketResponse{
+				Type:      sdk.MessageTypeEvent,
+				Topic:     topic,
+				Message:   &msg,
+				Timestamp: msg.TS.Format(time.RFC3339),
+			})
 		case <-sub.CloseChannel:
 			return
 		}
