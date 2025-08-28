@@ -2,6 +2,8 @@
 
 A high-performance, thread-safe in-memory publish-subscribe system built with Go and Fiber, supporting WebSocket-based messaging and REST API management.
 
+## Live: [ws://plivo-pub-sub.onrender.com/pubsub/v1/ws](https://plivo-pub-sub.onrender.com/)
+
 ## Features
 
 - **WebSocket-based Messaging**: Real-time publish/subscribe over WebSocket connections
