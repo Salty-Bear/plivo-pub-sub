@@ -1,11 +1,11 @@
-{
-  "name": "Stats",
-  "request": {
-    "method": "GET",
-    "url": "http://localhost:8080/api/pubsub/stats",
-    "headers": [
-      { "name": "Content-Type", "value": "application/json" }
-    ]
-  },
-  "description": "Returns detailed statistics per PubSub topic."
+meta {
+  name: Stats
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/pubsub/v1/stats
+  body: none
+  auth: inherit
 }
