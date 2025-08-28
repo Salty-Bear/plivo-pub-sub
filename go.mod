@@ -1,4 +1,4 @@
-module github.com/melvinodsa/go-iam
+module github.com/Aryaman/pub-sub
 
 go 1.23
 

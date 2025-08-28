@@ -2,7 +2,7 @@ package providers
 
 import (
 	"github.com/gofiber/fiber/v2"
-	"github.com/melvinodsa/go-iam/config"
+	"github.com/Aryaman/pub-sub/config"
 )
 
 type Provider struct {

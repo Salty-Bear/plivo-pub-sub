@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Aryaman/pub-sub/sdk"
 	"github.com/gofiber/fiber/v2"
-	"github.com/melvinodsa/go-iam/sdk"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

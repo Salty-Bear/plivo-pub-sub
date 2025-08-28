@@ -1,7 +1,7 @@
 package providers
 
 import (
-	"github.com/melvinodsa/go-iam/services/pubsub"
+	"github.com/Aryaman/pub-sub/services/pubsub"
 )
 
 type Service struct {
