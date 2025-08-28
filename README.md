@@ -183,7 +183,7 @@ docker run -p 8080:8080 \
 
 #### Create Topic
 ```bash
-POST /v1/topics
+POST /topics/v1
 Content-Type: application/json
 
 {
@@ -197,7 +197,7 @@ Content-Type: application/json
 
 #### Delete Topic
 ```bash
-DELETE /v1/topics/{name}
+DELETE /topics/v1/{name}
 ```
 
 **Response:**
@@ -206,7 +206,7 @@ DELETE /v1/topics/{name}
 
 #### List Topics
 ```bash
-GET /v1/topics
+GET /topics/v1
 ```
 
 **Response:**
@@ -223,7 +223,7 @@ GET /v1/topics
 
 #### Health Check
 ```bash
-GET /v1/health
+GET /health/v1
 ```
 
 **Response:**
@@ -237,7 +237,7 @@ GET /v1/health
 
 #### System Statistics
 ```bash
-GET /v1/stats
+GET /stats/v1
 ```
 
 **Response:**
@@ -305,13 +305,13 @@ curl -X POST http://localhost:8080/v1/topics \
   -d '{"name":"test-topic"}'
 
 # List topics
-curl http://localhost:8080/v1/topics
+curl http://localhost:8080/topics/v1
 
 # Check health
-curl http://localhost:8080/v1/health
+curl http://localhost:8080/health/v1
 
 # Get statistics
-curl http://localhost:8080/v1/stats
+curl http://localhost:8080/stats/v1
 
 # Delete topic
 curl -X DELETE http://localhost:8080/v1/topics/test-topic
