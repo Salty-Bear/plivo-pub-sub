@@ -55,7 +55,7 @@ cd pub-sub
 go mod download
 
 # Run the service
-go run cmd/main.go
+go run main.go
 
 # Service starts on http://localhost:8080
 ```
@@ -364,50 +364,6 @@ curl -X DELETE http://localhost:8080/v1/topics/test-topic
 - WebSocket origin validation recommended
 - Rate limiting should be implemented upstream
 
-## Development
 
-### Project Structure
-```
-├── cmd/                 # Application entrypoints
-├── internal/
-│   ├── pubsub/         # Core pub/sub implementation
-│   ├── handlers/       # HTTP/WebSocket handlers
-│   └── providers/      # Dependency injection
-├── sdk/                # Shared types and interfaces
-└── docker/             # Docker configuration
-```
 
-### Contributing
-1. Fork the repository
-2. Create a feature branch
-3. Add tests for new functionality
-4. Ensure all tests pass
-5. Submit a pull request
 
-## Troubleshooting
-
-### Common Issues
-
-#### WebSocket Connection Drops
-- Check network stability
-- Verify client ping/pong implementation
-- Monitor subscriber queue sizes
-
-#### Memory Growth
-- Review message retention settings
-- Check for stuck subscribers
-- Monitor topic cleanup
-
-#### Performance Issues
-- Profile message fan-out operations
-- Check goroutine counts
-- Review mutex contention
-
-### Debug Mode
-```bash
-LOG_LEVEL=debug go run cmd/main.go
-```
-
-## License
-
-MIT License - see LICENSE file for details.
