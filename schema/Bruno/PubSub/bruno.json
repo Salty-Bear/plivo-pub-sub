@@ -1,0 +1,11 @@
+{
+  "name": "PubSub",
+  "type": "folder",
+  "children": [
+    { "type": "request", "name": "Create Topic", "file": "Create Topic.bru" },
+    { "type": "request", "name": "Delete Topic", "file": "Delete Topic.bru" },
+    { "type": "request", "name": "List Topics", "file": "List Topics.bru" },
+    { "type": "request", "name": "Health", "file": "Health.bru" },
+    { "type": "request", "name": "Stats", "file": "Stats.bru" }
+  ]
+}

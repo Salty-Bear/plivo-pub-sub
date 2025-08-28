@@ -9,7 +9,7 @@ import (
 	"github.com/melvinodsa/go-iam/providers"
 )
 
-// Handle WebSocket connections
+// HandleWebSocket handles WebSocket connections for pub/sub operations
 func HandleWebSocket(c *websocket.Conn) {
 	log.Debug("received websocket connection request")
 	ctx := context.Background()
@@ -17,7 +17,7 @@ func HandleWebSocket(c *websocket.Conn) {
 	pr.S.PubSub.HandleWebSocket(ctx, c)
 }
 
-// Create topic
+// CreateTopic creates a new topic
 func CreateTopic(c *fiber.Ctx) error {
 	log.Debug("received create topic request")
 	pr := providers.GetProviders(c)
@@ -30,7 +30,7 @@ func CreateTopic(c *fiber.Ctx) error {
 	return nil
 }
 
-// Delete topic
+// DeleteTopic deletes an existing topic and disconnects all subscribers
 func DeleteTopic(c *fiber.Ctx) error {
 	log.Debug("received delete topic request")
 	pr := providers.GetProviders(c)
@@ -43,7 +43,7 @@ func DeleteTopic(c *fiber.Ctx) error {
 	return nil
 }
 
-// List topics
+// ListTopics returns all available topics with subscriber counts
 func ListTopics(c *fiber.Ctx) error {
 	log.Debug("received list topics request")
 	pr := providers.GetProviders(c)
@@ -56,7 +56,7 @@ func ListTopics(c *fiber.Ctx) error {
 	return nil
 }
 
-// Health check
+// Health returns system health information
 func Health(c *fiber.Ctx) error {
 	log.Debug("received health check request")
 	pr := providers.GetProviders(c)
@@ -69,7 +69,7 @@ func Health(c *fiber.Ctx) error {
 	return nil
 }
 
-// Stats
+// Stats returns system statistics including topic and message counts
 func Stats(c *fiber.Ctx) error {
 	log.Debug("received stats request")
 	pr := providers.GetProviders(c)

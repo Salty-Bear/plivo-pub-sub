@@ -1,0 +1,11 @@
+{
+  "name": "Delete Topic",
+  "request": {
+    "method": "DELETE",
+    "url": "http://localhost:8080/api/pubsub/topic/{{topicName}}",
+    "headers": [
+      { "name": "Content-Type", "value": "application/json" }
+    ]
+  },
+  "description": "Deletes a PubSub topic by name."
+}
